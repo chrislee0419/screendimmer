@@ -9,17 +9,48 @@ namespace ScreenDimmer
 {
     class ScreenInfo
     {
-        private static const int MAX_OPACITY = 90;
-        public int MaxOpacity { get { return MAX_OPACITY; } }
+        //
+        //  <ATTRIBUTES AND CONSTANTS>
+        //
 
-        // attributes
-        public string name { get { return name; } set { name = value; } }
-        public int originX { get { return originX; } set { originX = value; } }
-        public int originY { get { return originY; } set { originY = value; } }
-        public int resX { get { return resX; } set { resX = value; } }
-        public int resY { get { return resY; } set { resY = value; } }
-        public int opacity { get { return opacity; } set { opacity = value; } }
+        private const int MAX_OPACITY = 90;
+        public static int MaxOpacity { get { return MAX_OPACITY; } set { } }
+        private const int MIN_ORIGINX = -20000;
+        public static int MinOriginX { get { return MIN_ORIGINX; } set { } }
+        private const int MAX_ORIGINX = 20000;
+        public static int MaxOriginX { get { return MAX_ORIGINX; } set { } }
+        private const int MIN_ORIGINY = -10000;
+        public static int MinOriginY { get { return MIN_ORIGINY; } set { } }
+        private const int MAX_ORIGINY = 10000;
+        public static int MaxOriginY { get { return MAX_ORIGINY; } set { } }
+        private const int MIN_RES = 1;
+        public static int MinRes { get { return MIN_RES; } set { } }
+        private const int MAX_RES = 10000;
+        public static int MaxRes { get { return MAX_RES; } set { } }
+
+        private string name;
+        public string Name { get { return name; } set { name = value; } }
+        private int originX;
+        public int OriginX { get { return originX; } set { originX = value; } }
+        private int originY;
+        public int OriginY { get { return originY; } set { originY = value; } }
+        private int resX;
+        public int ResolutionX { get { return resX; } set { resX = value; } }
+        private int resY;
+        public int ResolutionY { get { return resY; } set { resY = value; } }
+        private int opacity;
+        public int Opacity { get { return opacity; } set { opacity = value; } }
         private TranslucentForm form;
+
+        //
+        //  </ATTRIBUTES AND CONSTANTS>
+        //
+
+
+
+        //
+        //  <CONSTRUCTORS>
+        //
 
         // constructor for when xml file is found
         public ScreenInfo(XElement screen)
@@ -30,6 +61,15 @@ namespace ScreenDimmer
             resX = Int32.Parse(screen.Attribute("resX").Value);
             resY = Int32.Parse(screen.Attribute("resY").Value);
             opacity = Int32.Parse(screen.Attribute("opacity").Value);
+
+            // check for values that are not too large or too small
+            bool originXcheck = originX < MIN_ORIGINX || originX > MAX_ORIGINX;
+            bool originYcheck = originY < MIN_ORIGINY || originY > MAX_ORIGINY;
+            bool resXcheck = resX < MIN_RES || resX > MAX_RES;
+            bool resYcheck = resY < MIN_RES || resY > MAX_RES;
+
+            if (originXcheck || originYcheck || resXcheck || resYcheck)
+                throw new ArgumentOutOfRangeException("");
 
             // check (0 <= opacity <= MAX_OPACITY)
             if (opacity > MAX_OPACITY)
@@ -58,5 +98,9 @@ namespace ScreenDimmer
 
             form = new TranslucentForm(originX, originY, resX, resY, opacity);
         }
+
+        //
+        //  </CONSTRUCTORS>
+        //
     }
 }
