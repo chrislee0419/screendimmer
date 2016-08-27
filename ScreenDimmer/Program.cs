@@ -19,17 +19,27 @@ namespace ScreenDimmer
             Application.SetCompatibleTextRenderingDefault(false);
 
             // check for existing .xml file
-            // if one exists, send information to form constructor
-            // if one does not exist, use default form constructor
+            // if one exists, do a basic check to see if the information is accurate and send information to OptionsForm constructor
+            // if one does not exist, use Screen to get information and use the default OptionsForm constructor
             try
             {
                 XDocument xml_doc = XDocument.Load("settings.xml");
-                var screens = xml_doc.Descendants("Screen");
+
+                // check if xml document is empty
+                if (xml_doc.Root.Elements().Any())
+                {
+                    string msg = "XML file does not contain any information.\n\n" +
+                            "Press \"OK\" if you would like to create a new XML file with the default settings. Otherwise, press \"Cancel\" to exit the program";
+                    DialogResult res = MessageBox.Show(msg, "Warning: Empty XML Document", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
+                    if (res == DialogResult.Cancel)
+                        return;
+                    else
+                        Application.Run(new OptionsForm());
+                }
+                else
+                    Application.Run(new OptionsForm(xml_doc));
             }
-            catch (FileNotFoundException)
-            {
-                Application.Run(new OptionsForm());
-            }
+            catch (FileNotFoundException) { Application.Run(new OptionsForm()); }
         }
     }
 }

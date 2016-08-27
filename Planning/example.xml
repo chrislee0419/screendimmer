@@ -1,0 +1,32 @@
+<root>
+	<options>
+		<basic>false</basic>
+		<monitors>2</monitors>
+	</options>
+	<basicscreen>
+		<left>-1600</left>
+		<up>0</up>
+		<right>1920</right>
+		<down>1080</down>
+		<opacity>30</opacity>
+		<enabled>true<enabled>
+	</basicscreen>
+	<screen>
+		<name>DISPLAY1</name>
+		<originX>0</originX>
+		<originY>0</originY>
+		<resX>1920</resX>
+		<resY>1080</resY>
+		<opacity>30</opacity>
+		<enabled>true</enabled>
+	</screen>
+	<screen>
+		<name>DISPLAY2</name>
+		<originX>-1600</originX>
+		<originY>180</originY>
+		<resX>1600</resX>
+		<resY>900</resY>
+		<opacity>60</opacity>
+		<enabled>false</enabled>
+	</screen>
+</root>
