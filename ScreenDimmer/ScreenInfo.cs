@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Drawing;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
@@ -29,17 +30,49 @@ namespace ScreenDimmer
         public static int MaxRes { get { return MAX_RES; } set { } }
 
         private string name;
-        public string Name { get { return name; } set { name = value; } }
+        public string Name
+        {
+            get { return name; }
+            set { name = value; }
+        }
+
         private int originX;
-        public int OriginX { get { return originX; } set { originX = value; } }
+        public int OriginX
+        {
+            get { return originX; }
+            set { originX = value; form.Location = new Point(originX, originY); }
+        }
+
         private int originY;
-        public int OriginY { get { return originY; } set { originY = value; } }
+        public int OriginY
+        {
+            get { return originY; }
+            set { originY = value; form.Location = new Point(originX, originY); }
+        }
+
         private int resX;
-        public int ResolutionX { get { return resX; } set { resX = value; } }
+        public int ResolutionX
+        {
+            get { return resX; }
+            set { resX = value; form.Width = resX; }
+        }
+
         private int resY;
-        public int ResolutionY { get { return resY; } set { resY = value; } }
+        public int ResolutionY
+        {
+            get { return resY; }
+            set { resY = value; form.Height = resY; }
+        }
+
         private int opacity;
-        public int Opacity { get { return opacity; } set { opacity = value; } }
+        public int Opacity
+        {
+            get { return opacity; }
+            set { opacity = value; form.Opacity = opacity; }
+        }
+
+        private int screen_index;
+        public int ScreenIndex { get { return screen_index; } set { screen_index = value; } }
         private TranslucentForm form;
 
         //
@@ -61,6 +94,7 @@ namespace ScreenDimmer
             resX = Int32.Parse(screen.Attribute("resX").Value);
             resY = Int32.Parse(screen.Attribute("resY").Value);
             opacity = Int32.Parse(screen.Attribute("opacity").Value);
+            screen_index = Int32.Parse(screen.Attribute("index").Value);
 
             // check for values that are not too large or too small
             bool originXcheck = originX < MIN_ORIGINX || originX > MAX_ORIGINX;
@@ -69,7 +103,7 @@ namespace ScreenDimmer
             bool resYcheck = resY < MIN_RES || resY > MAX_RES;
 
             if (originXcheck || originYcheck || resXcheck || resYcheck)
-                throw new ArgumentOutOfRangeException("");
+                throw new ArgumentOutOfRangeException();
 
             // check (0 <= opacity <= MAX_OPACITY)
             if (opacity > MAX_OPACITY)
@@ -78,10 +112,11 @@ namespace ScreenDimmer
                 opacity = 0;
 
             form = new TranslucentForm(originX, originY, resX, resY, opacity);
+            form.Hide();
         }
 
         // constructor for new screen
-        public ScreenInfo(string n, int x, int y, int width, int height)
+        public ScreenInfo(string n, int index, int x, int y, int width, int height)
         {
             name = n;
             originX = x;
@@ -89,6 +124,7 @@ namespace ScreenDimmer
             resX = width;
             resY = height;
             opacity = 30;
+            screen_index = index;
 
             // check (0 <= opacity <= MAX_OPACITY)
             if (opacity > MAX_OPACITY)
@@ -97,10 +133,24 @@ namespace ScreenDimmer
                 opacity = 0;
 
             form = new TranslucentForm(originX, originY, resX, resY, opacity);
+            form.Hide();
         }
 
         //
         //  </CONSTRUCTORS>
+        //
+
+
+
+        //
+        //  <INTERFACE>
+        //
+
+        public void Show() { form.Show(); }
+        public void Hide() { form.Hide(); }
+
+        //
+        //  </INTERFACE>
         //
     }
 }

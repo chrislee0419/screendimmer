@@ -78,16 +78,28 @@ namespace ScreenDimmer
 
             var screens = xml.Descendants("screen");
 
-            // get the options from the XML file
+            // get the options and basic screen information from the XML file
             try
             {
                 XElement options = xml.Descendants("options").First();
                 basic_options = Boolean.Parse(options.Attribute("basic").Value);
+
+                XElement basic = xml.Descendants("basicscreen").First();
+                int originX = Int32.Parse(basic.Attribute("left").Value);
+                int originY = Int32.Parse(basic.Attribute("up").Value);
+                int resX = Int32.Parse(basic.Attribute("right").Value) - originX;
+                int resY = Int32.Parse(basic.Attribute("down").Value) - originY;
+
+                basic_screen = new ScreenInfo("basic", 0, originX, originY, resX, resY);
             }
             catch (ArgumentNullException)
             { use_default_values = ExceptionMessageBox(ArgumentNullExceptionMessage, "Warning: ArgumentNullException"); }
             catch (FormatException)
             { use_default_values = ExceptionMessageBox(FormatExceptionMessage, "Warning: FormatException"); }
+            catch (OverflowException)
+            { use_default_values = ExceptionMessageBox(OverflowExceptionMessage, "Warning: OverflowException"); }
+            catch (ArgumentOutOfRangeException)
+            { use_default_values = ExceptionMessageBox(ArgumentOutOfRangeExceptionMessage, "Warning: ArgumentOutOfRangeException"); }
 
             // copy screen information from the XML file
             foreach (XElement screen in screens)
@@ -121,26 +133,11 @@ namespace ScreenDimmer
                 { use_default_values = ExceptionMessageBox(ArgumentOutOfRangeExceptionMessage, "Warning: ArgumentOutOfRangeException"); }
             }
 
-
+            // if there was an error in the XML file, recreate screen_list using AllScreens
             if (use_default_values)
             {
                 screen_list.Clear();
                 DefaultScreenList();
-            }
-            // otherwise, search for new screens
-            else
-            {
-                foreach (Screen scrn in Screen.AllScreens)
-                {
-                    bool found = false;
-                    foreach (ScreenInfo scrn_info in screen_list)
-                    {
-                        if (scrn_info.Name.Equals(scrn.DeviceName))
-                        { found = true; break; }
-                    }
-                    if (!found)
-                        screen_list.Add(NewScreen(scrn));
-                }
             }
 
             InitializeForm();
@@ -161,17 +158,17 @@ namespace ScreenDimmer
         private void DefaultScreenList()
         {
             foreach (Screen scrn in Screen.AllScreens)
-                screen_list.Add(NewScreen(scrn));
+                screen_list.Add(NewScreen(scrn, screen_list.Count + 1));
         }
 
-        private ScreenInfo NewScreen(Screen scrn)
+        private ScreenInfo NewScreen(Screen scrn, int index)
         {
             string name = scrn.DeviceName;
             int originX = scrn.Bounds.X;
             int originY = scrn.Bounds.Y;
             int resX = scrn.Bounds.Width;
             int resY = scrn.Bounds.Height;
-            return new ScreenInfo(name, originX, originY, resX, resY);
+            return new ScreenInfo(name, originX, originY, resX, resY, index);
         }
 
         // show MessageBox for exceptions thrown during the constructor for valid XML documents
@@ -183,6 +180,72 @@ namespace ScreenDimmer
             else
                 Application.Exit();
             return false;
+        }
+
+        // searches for new screens
+        // fixes position and resolution of existing screens
+        // rebuilds basic screen if necessary
+        private void DetectScreens()
+        {
+            bool recreate_basic_screen = false;
+            int basic_left = 0, basic_right = 0, basic_up = 0, basic_down = 0;
+
+            // search for new screens using Screen.AllScreens
+            foreach (Screen scrn in Screen.AllScreens)
+            {
+                bool found = false;
+                int x = scrn.Bounds.X;
+                int y = scrn.Bounds.Y;
+                int w = scrn.Bounds.Width;
+                int h = scrn.Bounds.Height;
+
+                // find ScreenInfo representation of Screen object 
+                foreach (ScreenInfo scrn_info in screen_list)
+                {
+                    if (scrn_info.Name.Equals(scrn.DeviceName))
+                    {
+                        // check if information stored is still accurate
+                        bool originX_check = scrn_info.OriginX != x;
+                        bool originY_check = scrn_info.OriginY != y;
+                        bool resX_check = scrn_info.ResolutionX != w;
+                        bool resY_check = scrn_info.ResolutionY != h;
+
+                        if ( originX_check || originY_check || resX_check || resY_check )
+                        {
+                            scrn_info.OriginX = x;
+                            scrn_info.OriginY = y;
+                            scrn_info.ResolutionX = w;
+                            scrn_info.ResolutionY = h;
+
+                            recreate_basic_screen = true;
+                        }
+
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    screen_list.Add(NewScreen(scrn, screen_list.Count + 1));
+
+                // get largest screen size
+                if (basic_left > x)
+                    basic_left = x;
+                if (basic_up > y)
+                    basic_up = y;
+                if (basic_right < x + w)
+                    basic_right = x + w;
+                if (basic_down < y + h)
+                    basic_down = y + h;
+            }
+
+            // recreate basic screen if necessary
+            if (recreate_basic_screen)
+            {
+                basic_screen.OriginX = basic_left;
+                basic_screen.OriginY = basic_up;
+                basic_screen.ResolutionX = basic_right - basic_left;
+                basic_screen.ResolutionY = basic_down - basic_up;
+            }
         }
 
         // initializes the attributes associated with this form
@@ -204,8 +267,19 @@ namespace ScreenDimmer
 
             tab_control.Dock = DockStyle.Fill;
             tab_control.Name = "tab_control";
-            Controls.Add(tab_control);
 
+            // general options tab
+            TabPage general_tab = new TabPage();
+            general_tab.Name = "General";
+
+            Label general_tab_text = new Label();
+            general_tab_text.Text = "hello";
+            general_tab_text.Size = new Size(100, 50);
+            general_tab_text.Font = new Font("Calibri", 10F);
+            general_tab.Controls.Add(general_tab_text);
+            tab_control.TabPages.Add(general_tab);
+            
+            this.Controls.Add(tab_control);
             this.ResumeLayout();
         }
 
