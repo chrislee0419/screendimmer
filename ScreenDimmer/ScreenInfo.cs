@@ -14,8 +14,8 @@ namespace ScreenDimmer
         //  <ATTRIBUTES AND CONSTANTS>
         //
 
-        private const int MAX_OPACITY = 90;
-        public static int MaxOpacity { get { return MAX_OPACITY; } set { } }
+        private const double MAX_OPACITY = 0.9;
+        public static double MaxOpacity { get { return MAX_OPACITY; } set { } }
         private const int MIN_ORIGINX = -20000;
         public static int MinOriginX { get { return MIN_ORIGINX; } set { } }
         private const int MAX_ORIGINX = 20000;
@@ -36,39 +36,34 @@ namespace ScreenDimmer
             set { name = value; }
         }
 
-        private int originX;
         public int OriginX
         {
-            get { return originX; }
-            set { originX = value; form.Location = new Point(originX, originY); }
+            get { return form.Location.X; }
+            set { form.Location = new Point(value, form.Location.Y); }
         }
 
-        private int originY;
         public int OriginY
         {
-            get { return originY; }
-            set { originY = value; form.Location = new Point(originX, originY); }
+            get { return form.Location.Y; }
+            set { form.Location = new Point(form.Location.X, value); }
         }
 
-        private int resX;
         public int ResolutionX
         {
-            get { return resX; }
-            set { resX = value; form.Width = resX; }
+            get { return form.Width; }
+            set { form.Width = value; }
         }
 
-        private int resY;
         public int ResolutionY
         {
-            get { return resY; }
-            set { resY = value; form.Height = resY; }
+            get { return form.Height; }
+            set { form.Height = value; }
         }
 
-        private int opacity;
-        public int Opacity
+        public double Opacity
         {
-            get { return opacity; }
-            set { opacity = value; form.Opacity = opacity; }
+            get { return form.Opacity; }
+            set { form.Opacity = value; }
         }
 
         private int screen_index;
@@ -88,13 +83,13 @@ namespace ScreenDimmer
         // constructor for when xml file is found
         public ScreenInfo(XElement screen)
         {
-            name = screen.Attribute("name").Value;
-            originX = Int32.Parse(screen.Attribute("originX").Value);
-            originY = Int32.Parse(screen.Attribute("originY").Value);
-            resX = Int32.Parse(screen.Attribute("resX").Value);
-            resY = Int32.Parse(screen.Attribute("resY").Value);
-            opacity = Int32.Parse(screen.Attribute("opacity").Value);
-            screen_index = Int32.Parse(screen.Attribute("index").Value);
+            name = screen.Element("name").Value;
+            int originX = Int32.Parse(screen.Element("originX").Value);
+            int originY = Int32.Parse(screen.Element("originY").Value);
+            int resX = Int32.Parse(screen.Element("resX").Value);
+            int resY = Int32.Parse(screen.Element("resY").Value);
+            double opacity = Double.Parse(screen.Element("opacity").Value);
+            screen_index = Int32.Parse(screen.Element("index").Value);
 
             // check for values that are not too large or too small
             bool originXcheck = originX < MIN_ORIGINX || originX > MAX_ORIGINX;
@@ -116,14 +111,9 @@ namespace ScreenDimmer
         }
 
         // constructor for new screen
-        public ScreenInfo(string n, int index, int x, int y, int width, int height)
+        public ScreenInfo(string n, int index, int x, int y, int width, int height, double opacity)
         {
             name = n;
-            originX = x;
-            originY = y;
-            resX = width;
-            resY = height;
-            opacity = 30;
             screen_index = index;
 
             // check (0 <= opacity <= MAX_OPACITY)
@@ -132,7 +122,7 @@ namespace ScreenDimmer
             else if (opacity < 0)
                 opacity = 0;
 
-            form = new TranslucentForm(originX, originY, resX, resY, opacity);
+            form = new TranslucentForm(x, y, width, height, opacity);
             form.Hide();
         }
 

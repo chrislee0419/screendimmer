@@ -26,7 +26,7 @@ namespace ScreenDimmer
                 XDocument xml_doc = XDocument.Load("settings.xml");
 
                 // check if xml document is empty
-                if (xml_doc.Root.Elements().Any())
+                if (!xml_doc.Root.Elements().Any())
                 {
                     string msg = "XML file does not contain any information.\n\n" +
                             "Press \"OK\" if you would like to create a new XML file with the default settings. Otherwise, press \"Cancel\" to exit the program";

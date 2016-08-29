@@ -42,10 +42,11 @@ namespace ScreenDimmer
             ScreenInfo.MinOriginY + " to " + ScreenInfo.MaxOriginY + " for the y-axis\n" +
             "\tScreen resolution of " + ScreenInfo.MinRes + " to " + ScreenInfo.MaxRes + "\n\n" +
             BaseExceptionMessage;
+        private const double DEFAULT_OPACITY = 0.3;
 
         private List<ScreenInfo> screen_list;
         private ScreenInfo basic_screen;
-        private bool basic_options;
+        private bool use_basic_screen;
         private TabControl tab_control;
 
         //
@@ -82,15 +83,19 @@ namespace ScreenDimmer
             try
             {
                 XElement options = xml.Descendants("options").First();
-                basic_options = Boolean.Parse(options.Attribute("basic").Value);
+                use_basic_screen = Boolean.Parse(options.Element("useAggregated").Value);
 
                 XElement basic = xml.Descendants("basicscreen").First();
-                int originX = Int32.Parse(basic.Attribute("left").Value);
-                int originY = Int32.Parse(basic.Attribute("up").Value);
-                int resX = Int32.Parse(basic.Attribute("right").Value) - originX;
-                int resY = Int32.Parse(basic.Attribute("down").Value) - originY;
+                int originX = Int32.Parse(basic.Element("left").Value);
+                int originY = Int32.Parse(basic.Element("up").Value);
+                int resX = Int32.Parse(basic.Element("right").Value) - originX;
+                int resY = Int32.Parse(basic.Element("down").Value) - originY;
+                bool basic_enabled = Boolean.Parse(basic.Element("enabled").Value);
+                double opacity = Double.Parse(basic.Element("opacity").Value);
 
-                basic_screen = new ScreenInfo("basic", 0, originX, originY, resX, resY);
+                basic_screen = new ScreenInfo("basic", 0, originX, originY, resX, resY, opacity);
+                if (use_basic_screen && basic_enabled)
+                    basic_screen.Show();
             }
             catch (ArgumentNullException)
             { use_default_values = ExceptionMessageBox(ArgumentNullExceptionMessage, "Warning: ArgumentNullException"); }
@@ -122,6 +127,10 @@ namespace ScreenDimmer
                             break;
                         }
                     }
+
+                    bool screen_enabled = Boolean.Parse(screen.Element("enabled").Value);
+                    if (!use_basic_screen && screen_enabled)
+                        scrn_info.Show();
                 }
                 catch (ArgumentNullException)
                 { use_default_values = ExceptionMessageBox(ArgumentNullExceptionMessage, "Warning: ArgumentNullException"); }
@@ -168,7 +177,7 @@ namespace ScreenDimmer
             int originY = scrn.Bounds.Y;
             int resX = scrn.Bounds.Width;
             int resY = scrn.Bounds.Height;
-            return new ScreenInfo(name, originX, originY, resX, resY, index);
+            return new ScreenInfo(name, originX, originY, resX, resY, index, DEFAULT_OPACITY);
         }
 
         // show MessageBox for exceptions thrown during the constructor for valid XML documents

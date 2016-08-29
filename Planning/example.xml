@@ -1,6 +1,6 @@
 <root>
 	<options>
-		<basic>false</basic>
+		<useAggregated>false</useAggregated>
 	</options>
 	<basicscreen>
 		<left>-1600</left>

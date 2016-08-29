@@ -16,13 +16,13 @@ namespace ScreenDimmer
         [DllImport("user32.dll", EntryPoint = "SetWindowLong")]
         private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
-        public TranslucentForm(int x, int y, int width, int height, int max_opacity)
+        public TranslucentForm(int x, int y, int width, int height, double opacity)
         {
             TopMost = true;
             ShowInTaskbar = false;
             FormBorderStyle = FormBorderStyle.None;
             BackColor = Color.Black;
-            Opacity = max_opacity;
+            Opacity = opacity;
             Width = width;
             Height = height;
             Location = new Point(x, y);
