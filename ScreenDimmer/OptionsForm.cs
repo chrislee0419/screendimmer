@@ -42,6 +42,9 @@ namespace ScreenDimmer
             ScreenInfo.MinOriginY + " to " + ScreenInfo.MaxOriginY + " for the y-axis\n" +
             "\tScreen resolution of " + ScreenInfo.MinRes + " to " + ScreenInfo.MaxRes + "\n\n" +
             BaseExceptionMessage;
+        private const string InformationLabelText = "ScreenDimmer allows users to dim their screens" +
+            " screens without changing the settings on the screen's control panel. Individual dimming" +
+            " of multiple screens is also supported.";
         private const double DEFAULT_OPACITY = 0.3;
 
         private List<ScreenInfo> screen_list;
@@ -64,7 +67,7 @@ namespace ScreenDimmer
         public OptionsForm()
         {
             screen_list = new List<ScreenInfo>();
-            DefaultScreenList();
+            DetectScreens();
 
             InitializeForm();
             InitializeTabs();
@@ -146,7 +149,7 @@ namespace ScreenDimmer
             if (use_default_values)
             {
                 screen_list.Clear();
-                DefaultScreenList();
+                DetectScreens();
             }
 
             InitializeForm();
@@ -162,13 +165,6 @@ namespace ScreenDimmer
         //
         //  <HELPER METHODS>
         //
-
-        // populate screen_list with found screens at default values
-        private void DefaultScreenList()
-        {
-            foreach (Screen scrn in Screen.AllScreens)
-                screen_list.Add(NewScreen(scrn, screen_list.Count + 1));
-        }
 
         private ScreenInfo NewScreen(Screen scrn, int index)
         {
@@ -194,6 +190,7 @@ namespace ScreenDimmer
         // searches for new screens
         // fixes position and resolution of existing screens
         // rebuilds basic screen if necessary
+        // can be used to set up default settings (needs empty screen_list)
         private void DetectScreens()
         {
             bool recreate_basic_screen = false;
@@ -277,16 +274,79 @@ namespace ScreenDimmer
             tab_control.Dock = DockStyle.Fill;
             tab_control.Name = "tab_control";
 
-            // general options tab
+            // 
+            //  <GENERAL TAB SETUP>
             TabPage general_tab = new TabPage();
             general_tab.Name = "General";
-
-            Label general_tab_text = new Label();
-            general_tab_text.Text = "hello";
-            general_tab_text.Size = new Size(100, 50);
-            general_tab_text.Font = new Font("Calibri", 10F);
-            general_tab.Controls.Add(general_tab_text);
             tab_control.TabPages.Add(general_tab);
+
+            TableLayoutPanel tbl = new TableLayoutPanel();
+            tbl.Dock = DockStyle.Fill;
+            tbl.RowCount = 3;
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 32));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 18));
+            tbl.ColumnCount = 1;
+            general_tab.Controls.Add(tbl);
+
+            // information group
+            GroupBox gb = new GroupBox();
+            gb.Dock = DockStyle.Fill;
+            gb.Text = "Information";
+            tbl.Controls.Add(gb, 0, 0);
+
+            Label lbl = new Label();
+            lbl.Text = InformationLabelText;
+            lbl.TextAlign = ContentAlignment.MiddleLeft;
+            lbl.Font = new Font("Calibri", 9);
+            lbl.MaximumSize = new Size(360, 150);
+            lbl.AutoSize = true;
+            lbl.Location = new Point(8, 20);
+            gb.Controls.Add(lbl);
+            lbl = new Label();
+            lbl.Text = "Application created by Chris Lee.";
+            lbl.TextAlign = ContentAlignment.MiddleRight;
+            lbl.Font = new Font("Calibri", 9);
+            lbl.Size = new Size(360, 20);
+            lbl.Location = new Point(6, 62);
+            gb.Controls.Add(lbl);
+
+            LinkLabel lnklbl = new LinkLabel();
+            lnklbl.Text = "Visit my GitHub repository for updates.";
+            lnklbl.LinkArea = new LinkArea(9, 6);
+            lnklbl.TextAlign = ContentAlignment.MiddleLeft;
+            lnklbl.Font = new Font("Calibri", 9);
+            lnklbl.MaximumSize = new Size(360, 50);
+            lnklbl.AutoSize = true;
+            lnklbl.Location = new Point(8, 84);
+            lnklbl.LinkClicked += new LinkLabelLinkClickedEventHandler(this.GitHubLinkClicked);
+            gb.Controls.Add(lnklbl);
+
+            // settings group
+            gb = new GroupBox();
+            gb.Dock = DockStyle.Fill;
+            gb.Text = "Settings";
+            tbl.Controls.Add(gb, 0, 1);
+
+            // buttons group
+            FlowLayoutPanel flp = new FlowLayoutPanel();
+            flp.Dock = DockStyle.Fill;
+            flp.FlowDirection = FlowDirection.RightToLeft;
+            tbl.Controls.Add(flp, 0, 2);
+
+            Button exit_button = new Button();
+            exit_button.Text = "Quit";
+            exit_button.Size = new Size(90, 30);
+            exit_button.MouseClick += new MouseEventHandler(ExitButtonClicked);
+            flp.Controls.Add(exit_button);
+
+            Button default_button = new Button();
+            default_button.Text = "Use Default Settings";
+            default_button.Size = new Size(130, 30);
+            // add callback
+            flp.Controls.Add(default_button);
+            //  </GENERAL TAB SETUP>
+            //
             
             this.Controls.Add(tab_control);
             this.ResumeLayout();
@@ -294,6 +354,22 @@ namespace ScreenDimmer
 
         //
         //  </HELPER METHODS>
+        //
+
+
+
+        //
+        //  <CALLBACKS>
+        //
+
+        private void GitHubLinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        { System.Diagnostics.Process.Start("https://github.com/chrislee0419/screendimmer"); }
+
+        private void ExitButtonClicked(object sender, EventArgs e)
+        { Application.Exit(); }
+
+        //
+        //  </CALLBACKS>
         //
     }
 }
