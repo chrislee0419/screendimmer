@@ -65,6 +65,18 @@ namespace ScreenDimmer
             get { return form.Opacity; }
             set { form.Opacity = value; }
         }
+        private bool show_form;
+        public bool Show
+        {
+            get { return show_form; }
+            set
+            {
+                if (value == true) form.Show();
+                else if (value == false) form.Hide();
+                else throw new ArgumentException();
+                show_form = value;
+            }
+        }
 
         private int screen_index;
         public int ScreenIndex { get { return screen_index; } set { screen_index = value; } }
@@ -90,6 +102,7 @@ namespace ScreenDimmer
             int resY = Int32.Parse(screen.Element("resY").Value);
             double opacity = Double.Parse(screen.Element("opacity").Value);
             screen_index = Int32.Parse(screen.Element("index").Value);
+            show_form = false;
 
             // check for values that are not too large or too small
             bool originXcheck = originX < MIN_ORIGINX || originX > MAX_ORIGINX;
@@ -115,6 +128,7 @@ namespace ScreenDimmer
         {
             name = n;
             screen_index = index;
+            show_form = false;
 
             // check (0 <= opacity <= MAX_OPACITY)
             if (opacity > MAX_OPACITY)
@@ -136,8 +150,7 @@ namespace ScreenDimmer
         //  <INTERFACE>
         //
 
-        public void Show() { form.Show(); }
-        public void Hide() { form.Hide(); }
+        public void Destroy() { form.Close(); form = null; }
 
         //
         //  </INTERFACE>
