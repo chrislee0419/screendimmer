@@ -14,6 +14,8 @@ namespace ScreenDimmer
         //  <ATTRIBUTES AND CONSTANTS>
         //
 
+        private const double MIN_OPACITY = 0.05;
+        public static double MinOpacity { get { return MIN_OPACITY; } set { } }
         private const double MAX_OPACITY = 0.9;
         public static double MaxOpacity { get { return MAX_OPACITY; } set { } }
         private const int MIN_ORIGINX = -20000;
@@ -71,10 +73,20 @@ namespace ScreenDimmer
             get { return show_form; }
             set
             {
-                if (value == true) form.Show();
-                else if (value == false) form.Hide();
-                else throw new ArgumentException();
                 show_form = value;
+                if (enabled && show_form) form.Show();
+                else form.Hide();
+            }
+        }
+        private bool enabled;
+        public bool Enabled
+        {
+            get { return enabled; }
+            set
+            {
+                enabled = value;
+                if (enabled && show_form) form.Show();
+                else form.Hide();
             }
         }
 
@@ -103,6 +115,7 @@ namespace ScreenDimmer
             double opacity = Double.Parse(screen.Element("opacity").Value);
             screen_index = Int32.Parse(screen.Element("index").Value);
             show_form = false;
+            enabled = false;
 
             // check for values that are not too large or too small
             bool originXcheck = originX < MIN_ORIGINX || originX > MAX_ORIGINX;
@@ -129,6 +142,7 @@ namespace ScreenDimmer
             name = n;
             screen_index = index;
             show_form = false;
+            enabled = false;
 
             // check (0 <= opacity <= MAX_OPACITY)
             if (opacity > MAX_OPACITY)

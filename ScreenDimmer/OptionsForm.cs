@@ -102,7 +102,9 @@ namespace ScreenDimmer
                 double opacity = Double.Parse(basic.Element("opacity").Value);
 
                 basic_screen = new ScreenInfo("basic", 0, originX, originY, resX, resY, opacity);
-                if (!use_separate_screens && basic_enabled)
+                if (!use_separate_screens)
+                    basic_screen.Enabled = true;
+                if (basic_enabled)
                     basic_screen.Show = true;
             }
             catch (ArgumentNullException)
@@ -124,6 +126,8 @@ namespace ScreenDimmer
                 try
                 {
                     ScreenInfo scrn_info = new ScreenInfo(screen);
+                    if (use_separate_screens)
+                        scrn_info.Enabled = true;
 
                     // ignore screens that do not appear in Screen.AllScreens
                     // they will not be added to screen_list, so they should not get their own tab
@@ -172,15 +176,17 @@ namespace ScreenDimmer
         //  <HELPER METHODS>
         //
 
-        private ScreenInfo NewScreen(Screen scrn, int index)
+        private ScreenInfo NewScreenInfo(Screen scrn, int index)
         {
             string name = scrn.DeviceName;
             int originX = scrn.Bounds.X;
             int originY = scrn.Bounds.Y;
             int resX = scrn.Bounds.Width;
             int resY = scrn.Bounds.Height;
-            ScreenInfo scrn_info = new ScreenInfo(name, originX, originY, resX, resY, index, DEFAULT_OPACITY);
+            ScreenInfo scrn_info = new ScreenInfo(name, index, originX, originY, resX, resY, DEFAULT_OPACITY);
             scrn_info.Show = true;
+            if (use_separate_screens)
+                scrn_info.Enabled = true;
             return scrn_info;
         }
 
@@ -239,7 +245,7 @@ namespace ScreenDimmer
                     }
                 }
                 if (!found)
-                    screen_list.Add(NewScreen(scrn, screen_list.Count + 1));
+                    screen_list.Add(NewScreenInfo(scrn, screen_list.Count + 1));
 
                 // get largest screen size
                 if (basic_left > x)
@@ -276,22 +282,59 @@ namespace ScreenDimmer
         // initializes the attributes associated with this form
         private void InitializeForm()
         {
+            this.SuspendLayout();
+
             // set size of form, disallow resizing
             this.Size = new Size(400, 300);
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
 
+            // TableLayoutPanel setup
+            TableLayoutPanel tbl = new TableLayoutPanel();
+            tbl.Dock = DockStyle.Fill;
+            tbl.RowCount = 2;
+            tbl.ColumnCount = 1;
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 84));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 16));
+
+            // tab control setup
             tab_control = new TabControl();
+            tab_control.Dock = DockStyle.Fill;
+
+            // buttons setup
+            FlowLayoutPanel flp = new FlowLayoutPanel();
+            flp.Dock = DockStyle.Fill;
+            flp.FlowDirection = FlowDirection.RightToLeft;
+            tbl.Controls.Add(flp, 0, 1);
+
+            Button exit_button = new Button();
+            exit_button.Text = "Quit";
+            exit_button.Size = new Size(80, 30);
+            exit_button.MouseClick += new MouseEventHandler(ExitButtonClicked);
+            flp.Controls.Add(exit_button);
+
+            Button default_button = new Button();
+            default_button.Text = "Use Default Settings";
+            default_button.Size = new Size(120, 30);
+            default_button.MouseClick += new MouseEventHandler(UseDefaultButtonClicked);
+            flp.Controls.Add(default_button);
+
+            Button detect_button = new Button();
+            detect_button.Text = "Detect Missing Screens";
+            detect_button.Size = new Size(140, 30);
+            detect_button.MouseClick += new MouseEventHandler(DetectScreensButtonClicked);
+            flp.Controls.Add(detect_button);
+
+            tbl.Controls.Add(tab_control, 0, 0);
+            this.Controls.Add(tbl);
+            this.ResumeLayout();
         }
 
         // create tabs for general options menu and individual screens
         private void InitializeTabs()
         {
             this.SuspendLayout();
-
-            tab_control.Dock = DockStyle.Fill;
-            tab_control.Name = "tab_control";
 
             // 
             //  <GENERAL TAB SETUP>
@@ -301,10 +344,9 @@ namespace ScreenDimmer
 
             TableLayoutPanel tbl = new TableLayoutPanel();
             tbl.Dock = DockStyle.Fill;
-            tbl.RowCount = 3;
-            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
-            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 32));
-            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 18));
+            tbl.RowCount = 2;
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 60));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 40));
             tbl.ColumnCount = 1;
             general_tab.Controls.Add(tbl);
 
@@ -361,30 +403,6 @@ namespace ScreenDimmer
             cb.MouseClick += new MouseEventHandler(IndividualScreensCheckBoxClicked);
             if (use_separate_screens) cb.Checked = true;
             gb.Controls.Add(cb);
-
-            // buttons group
-            FlowLayoutPanel flp = new FlowLayoutPanel();
-            flp.Dock = DockStyle.Fill;
-            flp.FlowDirection = FlowDirection.RightToLeft;
-            tbl.Controls.Add(flp, 0, 2);
-
-            Button exit_button = new Button();
-            exit_button.Text = "Quit";
-            exit_button.Size = new Size(80, 30);
-            exit_button.MouseClick += new MouseEventHandler(ExitButtonClicked);
-            flp.Controls.Add(exit_button);
-
-            Button default_button = new Button();
-            default_button.Text = "Use Default Settings";
-            default_button.Size = new Size(120, 30);
-            default_button.MouseClick += new MouseEventHandler(UseDefaultButtonClicked);
-            flp.Controls.Add(default_button);
-
-            Button detect_button = new Button();
-            detect_button.Text = "Detect Missing Screens";
-            detect_button.Size = new Size(140, 30);
-            detect_button.MouseClick += new MouseEventHandler(DetectScreensButtonClicked);
-            flp.Controls.Add(detect_button);
             //  </GENERAL TAB SETUP>
             //
 
@@ -394,7 +412,6 @@ namespace ScreenDimmer
             CreateScreenTabs();
             ChangeTabs();
             
-            this.Controls.Add(tab_control);
             this.ResumeLayout();
         }
 
@@ -404,30 +421,8 @@ namespace ScreenDimmer
         {
             this.SuspendLayout();
 
-            basic_screen_tab = new TabPage();
+            basic_screen_tab = CreateScreenTab(basic_screen);
             basic_screen_tab.Text = "Screen Options";
-
-            // TableLayoutPanel setup
-            TableLayoutPanel tbl = new TableLayoutPanel();
-            tbl.Dock = DockStyle.Fill;
-            tbl.RowCount = 3;
-            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
-            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 52));
-            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 18));
-            tbl.ColumnCount = 1;
-            basic_screen_tab.Controls.Add(tbl);
-
-            // screen information groupbox
-            GroupBox gb = new GroupBox();
-            gb.Text = "Screen Information";
-            gb.Dock = DockStyle.Fill;
-            tbl.Controls.Add(gb, 0, 0);
-
-            Label lbl = new Label();
-            lbl.Text = "Resolution: " + basic_screen.ResolutionX + " by " + basic_screen.ResolutionY;
-            lbl.AutoSize = true;
-            lbl.Location = new Point(8, 20);
-            gb.Controls.Add(lbl);
 
             this.ResumeLayout();
         }
@@ -445,36 +440,60 @@ namespace ScreenDimmer
             screen_tabs.Clear();
 
             foreach (ScreenInfo scrn_info in screen_list)
-            {
-                TabPage tab = new TabPage();
-                tab.Text = "Screen " + scrn_info.ScreenIndex;
-
-                // TableLayoutPanel setup
-                TableLayoutPanel tbl = new TableLayoutPanel();
-                tbl.Dock = DockStyle.Fill;
-                tbl.RowCount = 3;
-                tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
-                tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 52));
-                tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 18));
-                tbl.ColumnCount = 1;
-                tab.Controls.Add(tbl);
-
-                // screen information groupbox
-                GroupBox gb = new GroupBox();
-                gb.Text = "Screen Information";
-                gb.Dock = DockStyle.Fill;
-                tbl.Controls.Add(gb, 0, 0);
-
-                Label lbl = new Label();
-                lbl.Text = "Resolution: " + scrn_info.ResolutionX + " by " + scrn_info.ResolutionY;
-                lbl.AutoSize = true;
-                lbl.Location = new Point(8, 20);
-                gb.Controls.Add(lbl);
-
-                screen_tabs.Add(tab, scrn_info);
-            }
+                screen_tabs.Add(CreateScreenTab(scrn_info), scrn_info);
 
             this.ResumeLayout();
+        }
+
+        // creates a TabPage for a ScreenInfo
+        TabPage CreateScreenTab(ScreenInfo scrn)
+        {
+            TabPage tab = new TabPage();
+            tab.Text = "Screen " + scrn.ScreenIndex;
+
+            // TableLayoutPanel setup
+            TableLayoutPanel tbl = new TableLayoutPanel();
+            tbl.Dock = DockStyle.Fill;
+            tbl.RowCount = 2;
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 38));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 62));
+            tbl.ColumnCount = 1;
+            tab.Controls.Add(tbl);
+
+            // screen information groupbox
+            GroupBox gb = new GroupBox();
+            gb.Text = "Screen Information";
+            gb.Dock = DockStyle.Fill;
+            tbl.Controls.Add(gb, 0, 0);
+
+            ListBox lb = new ListBox();
+            lb.Dock = DockStyle.Fill;
+            lb.Items.Add("Resolution: " + scrn.ResolutionX + " by " + scrn.ResolutionY);
+            lb.Items.Add("Position: (" + scrn.OriginX + ", " + scrn.OriginY + ")");
+            gb.Controls.Add(lb);
+
+            // controls groupbox
+            gb = new GroupBox();
+            gb.Text = "Controls";
+            gb.Dock = DockStyle.Fill;
+            tbl.Controls.Add(gb, 0, 1);
+
+            TrackBar tb = new TrackBar();
+            tb.Location = new Point(10, 20);
+            tb.Width = 280;
+            tb.TickStyle = TickStyle.None;
+            tb.TickFrequency = 1;
+            tb.SmallChange = 1;
+            tb.LargeChange = 10;
+
+            tb.Maximum = (int)(ScreenInfo.MaxOpacity * 100);
+            tb.Minimum = (int)(ScreenInfo.MinOpacity * 100);
+            tb.Value = (int)(scrn.Opacity * 100);
+
+            tb.Scroll += new EventHandler(OpacityTrackBarScroll);
+            gb.Controls.Add(tb);
+
+            return tab;
         }
 
         // changes the tabs shown by tab_control
@@ -487,10 +506,10 @@ namespace ScreenDimmer
             TabPage general = tab_control.TabPages[0];
             tab_control.TabPages.RemoveAt(0);
             if (use_separate_screens)
-                basic_screen.Show = false;
+                basic_screen.Enabled = false;
             else
-                foreach (TabPage tab in tab_control.TabPages)
-                    screen_tabs[tab].Show = false;
+                foreach (TabPage tab in screen_tabs.Keys)
+                    screen_tabs[tab].Enabled = false;
             tab_control.TabPages.Clear();
             tab_control.TabPages.Add(general);
 
@@ -498,11 +517,17 @@ namespace ScreenDimmer
             if (use_separate_screens)
             {
                 foreach (TabPage tab in screen_tabs.Keys)
+                {
                     tab_control.TabPages.Add(tab);
+                    screen_tabs[tab].Enabled = true;
+                }
             }
             // using aggregated screen
             else
+            {
                 tab_control.TabPages.Add(basic_screen_tab);
+                basic_screen.Enabled = true;
+            }
 
             this.ResumeLayout();
         }
@@ -546,6 +571,15 @@ namespace ScreenDimmer
             DetectScreens();
             CreateScreenTabs();
             ChangeTabs();
+        }
+
+        private void OpacityTrackBarScroll(object sender, EventArgs e)
+        {
+            TrackBar tb = sender as TrackBar;
+            // TrackBar -> GroupBox -> TableLayoutPanel -> TabPage
+            TabPage tab = tb.Parent.Parent.Parent as TabPage;
+
+            screen_tabs[tab].Opacity = (double)tb.Value / 100;
         }
 
         //
