@@ -48,7 +48,7 @@ namespace ScreenDimmer
         private const double DEFAULT_OPACITY = 0.3;
 
         private List<ScreenInfo> screen_list;
-        private Dictionary<TabPage, ScreenInfo> screen_tabs;
+        private List<TabPage> screen_tabs;
 
         private ScreenInfo basic_screen;
         private TabPage basic_screen_tab;
@@ -406,7 +406,7 @@ namespace ScreenDimmer
             //  </GENERAL TAB SETUP>
             //
 
-            screen_tabs = new Dictionary<TabPage, ScreenInfo>();
+            screen_tabs = new List<TabPage>();
 
             CreateBasicScreenTab();
             CreateScreenTabs();
@@ -435,12 +435,12 @@ namespace ScreenDimmer
 
             // remove old tabs
             if (use_separate_screens)
-                foreach (TabPage tab in screen_tabs.Keys)
+                foreach (TabPage tab in screen_tabs)
                     tab_control.TabPages.Remove(tab);
             screen_tabs.Clear();
 
             foreach (ScreenInfo scrn_info in screen_list)
-                screen_tabs.Add(CreateScreenTab(scrn_info), scrn_info);
+                screen_tabs.Add(CreateScreenTab(scrn_info));
 
             this.ResumeLayout();
         }
@@ -450,6 +450,7 @@ namespace ScreenDimmer
         {
             TabPage tab = new TabPage();
             tab.Text = "Screen " + scrn.ScreenIndex;
+            tab.Tag = scrn;
 
             // TableLayoutPanel setup
             TableLayoutPanel tbl = new TableLayoutPanel();
@@ -479,6 +480,7 @@ namespace ScreenDimmer
             tbl.Controls.Add(gb, 0, 1);
 
             TrackBar tb = new TrackBar();
+            tb.Tag = scrn;
             tb.Location = new Point(10, 20);
             tb.Width = 280;
             tb.TickStyle = TickStyle.None;
@@ -508,18 +510,18 @@ namespace ScreenDimmer
             if (use_separate_screens)
                 basic_screen.Enabled = false;
             else
-                foreach (TabPage tab in screen_tabs.Keys)
-                    screen_tabs[tab].Enabled = false;
+                foreach (TabPage tab in screen_tabs)
+                    (tab.Tag as ScreenInfo).Enabled = false;
             tab_control.TabPages.Clear();
             tab_control.TabPages.Add(general);
 
             // using separate screens
             if (use_separate_screens)
             {
-                foreach (TabPage tab in screen_tabs.Keys)
+                foreach (TabPage tab in screen_tabs)
                 {
                     tab_control.TabPages.Add(tab);
-                    screen_tabs[tab].Enabled = true;
+                    (tab.Tag as ScreenInfo).Enabled = true;
                 }
             }
             // using aggregated screen
@@ -576,10 +578,9 @@ namespace ScreenDimmer
         private void OpacityTrackBarScroll(object sender, EventArgs e)
         {
             TrackBar tb = sender as TrackBar;
-            // TrackBar -> GroupBox -> TableLayoutPanel -> TabPage
-            TabPage tab = tb.Parent.Parent.Parent as TabPage;
+            ScreenInfo tab = tb.Tag as ScreenInfo;
 
-            screen_tabs[tab].Opacity = (double)tb.Value / 100;
+            tab.Opacity = (double)tb.Value / 100;
         }
 
         //
