@@ -422,7 +422,7 @@ namespace ScreenDimmer
             this.SuspendLayout();
 
             basic_screen_tab = CreateScreenTab(basic_screen);
-            basic_screen_tab.Text = "Screen Options";
+            basic_screen_tab.Text = "Dimmer Options";
 
             this.ResumeLayout();
         }
@@ -431,7 +431,7 @@ namespace ScreenDimmer
         // can be used to update tabs after detecting new screens
         void CreateScreenTabs()
         {
-            this.SuspendLayout();
+            tab_control.SuspendLayout();
 
             // remove old tabs
             if (use_separate_screens)
@@ -442,7 +442,7 @@ namespace ScreenDimmer
             foreach (ScreenInfo scrn_info in screen_list)
                 screen_tabs.Add(CreateScreenTab(scrn_info));
 
-            this.ResumeLayout();
+            tab_control.ResumeLayout();
         }
 
         // creates a TabPage for a ScreenInfo
@@ -455,9 +455,10 @@ namespace ScreenDimmer
             // TableLayoutPanel setup
             TableLayoutPanel tbl = new TableLayoutPanel();
             tbl.Dock = DockStyle.Fill;
-            tbl.RowCount = 2;
+            tbl.RowCount = 3;
             tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 38));
-            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 62));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 38));
+            tbl.RowStyles.Add(new RowStyle(SizeType.Percent, 24));
             tbl.ColumnCount = 1;
             tab.Controls.Add(tbl);
 
@@ -473,17 +474,17 @@ namespace ScreenDimmer
             lb.Items.Add("Position: (" + scrn.OriginX + ", " + scrn.OriginY + ")");
             gb.Controls.Add(lb);
 
-            // controls groupbox
+            // opacity groupbox
             gb = new GroupBox();
-            gb.Text = "Controls";
+            gb.Text = "Opacity";
             gb.Dock = DockStyle.Fill;
             tbl.Controls.Add(gb, 0, 1);
 
             TrackBar tb = new TrackBar();
             tb.Tag = scrn;
-            tb.Location = new Point(10, 20);
+            tb.Location = new Point(8, 14);
             tb.Width = 280;
-            tb.TickStyle = TickStyle.None;
+            tb.TickStyle = TickStyle.Both;
             tb.TickFrequency = 1;
             tb.SmallChange = 1;
             tb.LargeChange = 10;
@@ -491,9 +492,35 @@ namespace ScreenDimmer
             tb.Maximum = (int)(ScreenInfo.MaxOpacity * 100);
             tb.Minimum = (int)(ScreenInfo.MinOpacity * 100);
             tb.Value = (int)(scrn.Opacity * 100);
-
             tb.Scroll += new EventHandler(OpacityTrackBarScroll);
             gb.Controls.Add(tb);
+
+            NumericUpDown nud = new NumericUpDown();
+            nud.Tag = scrn;
+            nud.Location = new Point(294, 26);
+            nud.Size = new Size(60, 40);
+
+            nud.Maximum = (int)(ScreenInfo.MaxOpacity * 100);
+            nud.Minimum = (int)(ScreenInfo.MinOpacity * 100);
+            nud.Value = (int)(scrn.Opacity * 100);
+            nud.ValueChanged += new EventHandler(OpacityNumericValueChanged);
+            nud.KeyDown += new KeyEventHandler(OpacityNumericKeyDown);
+            gb.Controls.Add(nud);
+
+            // dimming checkbox
+            FlowLayoutPanel flp = new FlowLayoutPanel();
+            flp.Dock = DockStyle.Fill;
+            flp.FlowDirection = FlowDirection.LeftToRight;
+            flp.Padding = new Padding(12, 4, 4, 12);
+            tbl.Controls.Add(flp, 0, 2);
+
+            CheckBox cb = new CheckBox();
+            cb.Tag = scrn;
+            cb.Text = "Enable dimming";
+            cb.AutoSize = true;
+            cb.Checked = scrn.Show;
+            cb.MouseClick += new MouseEventHandler(DimmingCheckBoxClicked);
+            flp.Controls.Add(cb);
 
             return tab;
         }
@@ -502,7 +529,7 @@ namespace ScreenDimmer
         // depends on the value of use_separate_screen
         void ChangeTabs()
         {
-            this.SuspendLayout();
+            tab_control.SuspendLayout();
 
             // clear tabs, keep general information tab
             TabPage general = tab_control.TabPages[0];
@@ -531,7 +558,7 @@ namespace ScreenDimmer
                 basic_screen.Enabled = true;
             }
 
-            this.ResumeLayout();
+            tab_control.ResumeLayout();
         }
 
         //
@@ -547,7 +574,7 @@ namespace ScreenDimmer
         private void GitHubLinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         { System.Diagnostics.Process.Start("https://github.com/chrislee0419/screendimmer"); }
 
-        private void IndividualScreensCheckBoxClicked(object sender, EventArgs e)
+        private void IndividualScreensCheckBoxClicked(object sender, MouseEventArgs e)
         {
             if ((sender as CheckBox).Checked)
                 use_separate_screens = true;
@@ -578,9 +605,36 @@ namespace ScreenDimmer
         private void OpacityTrackBarScroll(object sender, EventArgs e)
         {
             TrackBar tb = sender as TrackBar;
-            ScreenInfo tab = tb.Tag as ScreenInfo;
+            ScreenInfo scrn = tb.Tag as ScreenInfo;
+            NumericUpDown nud = (tb.Parent as GroupBox).Controls[1] as NumericUpDown;
 
-            tab.Opacity = (double)tb.Value / 100;
+            scrn.Opacity = (double)tb.Value / 100;
+            nud.Value = tb.Value;
+        }
+
+        private void OpacityNumericValueChanged(object sender, EventArgs e)
+        {
+            NumericUpDown nud = sender as NumericUpDown;
+            ScreenInfo scrn = nud.Tag as ScreenInfo;
+            TrackBar tb = (nud.Parent as GroupBox).Controls[0] as TrackBar;
+
+            scrn.Opacity = (double)nud.Value / 100;
+            tb.Value = (int)nud.Value;
+        }
+
+        private void OpacityNumericKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+                e.Handled = e.SuppressKeyPress = true;
+        }
+
+        private void DimmingCheckBoxClicked(object sender, MouseEventArgs e)
+        {
+            CheckBox cb = sender as CheckBox;
+            ScreenInfo scrn = cb.Tag as ScreenInfo;
+
+            if (cb.Checked) scrn.Show = true;
+            else scrn.Show = false;
         }
 
         //
