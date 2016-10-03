@@ -44,8 +44,10 @@ namespace ScreenDimmer
             "\tScreen resolution of " + ScreenInfo.MinRes + " to " + ScreenInfo.MaxRes + "\n\n" +
             BaseExceptionMessage;
         private const string InformationLabelText = "ScreenDimmer allows users to dim their screens" +
-            " screens without changing the settings on the screen's control panel. Individual dimming" +
+            " without changing the settings on the screen's control panel. Individual dimming" +
             " of multiple screens is also supported.";
+        private const string TrayHelpText = "Double click me to quickly open the Settings window." +
+            " Right click me to bring up the context menu.";
         private const double DEFAULT_OPACITY = 0.3;
         private const int TIMER_DURATION = 30000;
 
@@ -58,6 +60,9 @@ namespace ScreenDimmer
 
         private TabControl tab_control;
         private Label screen_count_label;
+
+        private NotifyIcon tray;
+        private bool tray_quit;
 
         private System.Timers.Timer save_timer;
         private bool save_timer_triggered;
@@ -82,6 +87,7 @@ namespace ScreenDimmer
             InitializeForm();
             InitializeTabs();
             InitializeTimer();
+            SaveSettings();
         }
 
         // constructor for valid XML document
@@ -144,7 +150,7 @@ namespace ScreenDimmer
                             screen_list.Add(scrn_info);
 
                             bool screen_enabled = Boolean.Parse(screen.Element("enabled").Value);
-                            if (use_separate_screens && screen_enabled)
+                            if (screen_enabled)
                                 scrn_info.Show = true;
 
                             break;
@@ -193,6 +199,29 @@ namespace ScreenDimmer
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
+            this.Icon = Properties.Resources.Icon;
+            this.FormClosing += CloseForm;
+
+            // system tray icon setup
+            tray = new NotifyIcon();
+            tray.Text = "ScreenDimmer";
+            tray.Icon = this.Icon;
+            tray.Visible = true;
+            tray.MouseDoubleClick += TrayShowWindow;
+
+            tray.BalloonTipTitle = "Help";
+            tray.BalloonTipText = TrayHelpText;
+            tray.BalloonTipIcon = ToolTipIcon.Info;
+            tray.MouseClick += TrayHelpBubble;
+
+            tray_quit = false;
+
+            // system tray context menu setup
+            tray.ContextMenu = new ContextMenu();
+            MenuItem menu_show = new MenuItem("Show Settings Window", TrayShowWindow);
+            MenuItem menu_quit = new MenuItem("Exit Program", ExitButtonClicked);
+            tray.ContextMenu.MenuItems.Add(menu_show);
+            tray.ContextMenu.MenuItems.Add(menu_quit);
 
             // TableLayoutPanel setup
             TableLayoutPanel tbl = new TableLayoutPanel();
@@ -269,14 +298,6 @@ namespace ScreenDimmer
             lbl.Location = new Point(8, 20);
             gb.Controls.Add(lbl);
 
-            lbl = new Label();
-            lbl.Text = "Application created by Chris Lee.";
-            lbl.TextAlign = ContentAlignment.MiddleRight;
-            lbl.Font = new Font("Arial", 9);
-            lbl.Size = new Size(360, 20);
-            lbl.Location = new Point(6, 65);
-            gb.Controls.Add(lbl);
-
             LinkLabel lnklbl = new LinkLabel();
             lnklbl.Text = "Visit my GitHub repository for updates.";
             lnklbl.LinkArea = new LinkArea(9, 6);
@@ -284,7 +305,7 @@ namespace ScreenDimmer
             lnklbl.Font = new Font("Arial", 9);
             lnklbl.MaximumSize = new Size(360, 50);
             lnklbl.AutoSize = true;
-            lnklbl.Location = new Point(8, 84);
+            lnklbl.Location = new Point(8, 80);
             lnklbl.LinkClicked += GitHubLinkClicked;
             gb.Controls.Add(lnklbl);
 
@@ -664,6 +685,15 @@ namespace ScreenDimmer
         //  <CALLBACKS>
         //
 
+        private void CloseForm(object sender, FormClosingEventArgs e)
+        {
+            if (!tray_quit)
+            {
+                this.Hide();
+                e.Cancel = true;
+            }
+        }
+
         private void GitHubLinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         { System.Diagnostics.Process.Start("https://github.com/chrislee0419/screendimmer"); }
 
@@ -684,6 +714,8 @@ namespace ScreenDimmer
             if (save_timer_triggered)
                 SaveSettings();
 
+            tray_quit = true;
+            tray.Visible = false;
             Application.Exit();
         }
 
@@ -751,6 +783,12 @@ namespace ScreenDimmer
             save_timer.Elapsed -= SaveTimerElapsed;
             save_timer_triggered = false;
         }
+
+        private void TrayShowWindow(object sender, EventArgs e)
+        { this.Show(); }
+
+        private void TrayHelpBubble(object sender, MouseEventArgs e)
+        { tray.ShowBalloonTip(4000); }
 
         //
         //  </CALLBACKS>
