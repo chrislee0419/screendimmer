@@ -1,33 +1,33 @@
 <root>
 	<options>
-		<useAggregated>false</useAggregated>
+		<separateScreens>true</separateScreens>
 	</options>
-	<basicscreen>
+	<basicScreen>
 		<left>-1600</left>
 		<up>0</up>
 		<right>1920</right>
 		<down>1080</down>
-		<opacity>30</opacity>
-		<enabled>true<enabled>
-	</basicscreen>
+		<opacity>0.2</opacity>
+		<enabled>true</enabled>
+	</basicScreen>
 	<screen>
-		<name>DISPLAY1</name>
+		<name>\\.\DISPLAY2</name>
 		<index>1</index>
 		<originX>0</originX>
 		<originY>0</originY>
 		<resX>1920</resX>
 		<resY>1080</resY>
-		<opacity>30</opacity>
+		<opacity>0.1</opacity>
 		<enabled>true</enabled>
 	</screen>
 	<screen>
-		<name>DISPLAY2</name>
+		<name>\\.\DISPLAY1</name>
 		<index>2</index>
 		<originX>-1600</originX>
 		<originY>180</originY>
 		<resX>1600</resX>
 		<resY>900</resY>
-		<opacity>60</opacity>
-		<enabled>false</enabled>
+		<opacity>0.1</opacity>
+		<enabled>true</enabled>
 	</screen>
 </root>
