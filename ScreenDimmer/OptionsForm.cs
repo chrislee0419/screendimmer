@@ -19,29 +19,33 @@ namespace ScreenDimmer
         //
 
         // constants
+        private const string FirstTimeText = "Hello user!\n\nScreenDimmer is an application that makes " +
+            "it easier to change the brightness of your screens.\n\nThis application uses an XML " +
+            "file to keep track of your settings. Please make sure that you keep this file to retain " +
+            "your settings.";
         private const string BaseExceptionMessage =
             "Press \"OK\" if you would like to create a new XML file with the default settings. " +
             "Otherwise, press \"Cancel\" to exit the program.";
-        private const string ArgumentNullExceptionMessage =
-            "XML file contains an empty tag. " +
-            "Please check if the settings.xml file is valid.\n\n" +
+        private const string InvalidOperationExceptionMessage =
+            "Your XML file is missing an element. " +
+            "Please check if the \"settings.xml\" file is valid.\n\n" +
             BaseExceptionMessage;
         private const string FormatExceptionMessage =
-            "XML file contain an invalid value. " +
-            "Please check the settings.xml file for invalid values.\n\n" +
+            "Your XML file contain an invalid value. " +
+            "Please check the \"settings.xml\" file for invalid values.\n\n" +
             BaseExceptionMessage;
         private const string OverflowExceptionMessage =
-            "XML file contain an extremely large value. " +
-            "Please check the settings.xml file for extremely large numerical values.\n\n" +
+            "Your XML file contain an extremely large value. " +
+            "Please check the \"settings.xml\" file for extremely large numerical values.\n\n" +
             BaseExceptionMessage;
         private static readonly string ArgumentOutOfRangeExceptionMessage =
-            "XML file contains screen values that are too large or too small. " +
-            "Please check the settings.xml file for very large or small numerical values.\n\n" +
-            "ScreenDimmer allows (for single or aggregated screens):\n" +
-            "\tScreen position (origin) of " +
-            ScreenInfo.MinOriginX + " to " + ScreenInfo.MaxOriginX + " for the x-axis, and" +
+            "Your XML file contains screen values that are too large or too small. " +
+            "Please check the \"settings.xml\" file for very large or small numerical values.\n\n" +
+            "ScreenDimmer allows (for individual or aggregated screens):\n" +
+            "- Screen position (origin) of " +
+            ScreenInfo.MinOriginX + " to " + ScreenInfo.MaxOriginX + " for the x-axis, and " +
             ScreenInfo.MinOriginY + " to " + ScreenInfo.MaxOriginY + " for the y-axis\n" +
-            "\tScreen resolution of " + ScreenInfo.MinRes + " to " + ScreenInfo.MaxRes + "\n\n" +
+            "- Screen resolution of " + ScreenInfo.MinRes + " to " + ScreenInfo.MaxRes + "\n\n" +
             BaseExceptionMessage;
         private const string InformationLabelText = "ScreenDimmer allows users to dim their screens" +
             " without changing the settings on the screen's control panel. Individual dimming" +
@@ -49,7 +53,7 @@ namespace ScreenDimmer
         private const string TrayHelpText = "Double click me to quickly open the Settings window." +
             " Right click me to bring up the context menu.";
         private const double DEFAULT_OPACITY = 0.3;
-        private const int TIMER_DURATION = 30000;
+        private const int TIMER_DURATION = 15000;
 
         private List<ScreenInfo> screen_list;
         private List<TabPage> screen_tabs;
@@ -81,7 +85,10 @@ namespace ScreenDimmer
         // used when "settings.xml" is not found, or contains invalid values
         public OptionsForm()
         {
+            MessageBox.Show(FirstTimeText, "ScreenDimmer");
+
             screen_list = new List<ScreenInfo>();
+            basic_screen = new ScreenInfo("basic", 0, 0, 0, 0, 0, DEFAULT_OPACITY);
             DetectScreens();
 
             InitializeForm();
@@ -100,27 +107,24 @@ namespace ScreenDimmer
             var screens = xml.Descendants("screen");
 
             // get the options and basic screen information from the XML file
+            basic_screen = new ScreenInfo("basic", 0, 0, 0, 0, 0, DEFAULT_OPACITY);
             try
             {
                 XElement options = xml.Descendants("options").First();
-                use_separate_screens = Boolean.Parse(options.Element("separateScreens").Value);
-
                 XElement basic = xml.Descendants("basicScreen").First();
-                int originX = Int32.Parse(basic.Element("left").Value);
-                int originY = Int32.Parse(basic.Element("up").Value);
-                int resX = Int32.Parse(basic.Element("right").Value) - originX;
-                int resY = Int32.Parse(basic.Element("down").Value) - originY;
-                bool basic_enabled = Boolean.Parse(basic.Element("enabled").Value);
-                double opacity = Double.Parse(basic.Element("opacity").Value);
+                use_separate_screens = (Boolean.Parse(options.Element("separateScreens").Value));
 
-                basic_screen = new ScreenInfo("basic", 0, originX, originY, resX, resY, opacity);
-                if (!use_separate_screens)
-                    basic_screen.Enabled = true;
-                if (basic_enabled)
-                    basic_screen.Show = true;
+                basic_screen.OriginX = Int32.Parse(basic.Element("left").Value);
+                basic_screen.OriginY = Int32.Parse(basic.Element("up").Value);
+                basic_screen.ResolutionX = Int32.Parse(basic.Element("right").Value) - basic_screen.OriginX;
+                basic_screen.ResolutionY = Int32.Parse(basic.Element("down").Value) - basic_screen.OriginY;
+                basic_screen.Show = Boolean.Parse(basic.Element("enabled").Value);
+                basic_screen.Opacity = Double.Parse(basic.Element("opacity").Value);
+                basic_screen.Enabled = !use_separate_screens;
+
             }
-            catch (ArgumentNullException)
-            { use_default_values = ExceptionMessageBox(ArgumentNullExceptionMessage, "Warning: ArgumentNullException"); }
+            catch (InvalidOperationException)
+            { use_default_values = ExceptionMessageBox(InvalidOperationExceptionMessage, "Warning: InvalidOperationException"); }
             catch (FormatException)
             { use_default_values = ExceptionMessageBox(FormatExceptionMessage, "Warning: FormatException"); }
             catch (OverflowException)
@@ -157,8 +161,6 @@ namespace ScreenDimmer
                         }
                     }
                 }
-                catch (ArgumentNullException)
-                { use_default_values = ExceptionMessageBox(ArgumentNullExceptionMessage, "Warning: ArgumentNullException"); }
                 catch (FormatException)
                 { use_default_values = ExceptionMessageBox(FormatExceptionMessage, "Warning: FormatException"); }
                 catch (OverflowException)
@@ -172,6 +174,7 @@ namespace ScreenDimmer
             {
                 ClearScreenList();
                 DetectScreens();
+                SaveSettings();
             }
 
             InitializeForm();
@@ -195,11 +198,12 @@ namespace ScreenDimmer
             this.SuspendLayout();
 
             // set size of form, disallow resizing
+            this.Text = "ScreenDimmer";
+            this.Icon = Properties.Resources.Icon;
             this.Size = new Size(400, 300);
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Icon = Properties.Resources.Icon;
             this.FormClosing += CloseForm;
 
             // system tray icon setup
@@ -368,7 +372,7 @@ namespace ScreenDimmer
             int resX = scrn.Bounds.Width;
             int resY = scrn.Bounds.Height;
             ScreenInfo scrn_info = new ScreenInfo(name, index, originX, originY, resX, resY, DEFAULT_OPACITY);
-            scrn_info.Show = true;
+            scrn_info.Show = false;
             if (use_separate_screens)
                 scrn_info.Enabled = true;
             return scrn_info;
@@ -381,7 +385,11 @@ namespace ScreenDimmer
             if (res == DialogResult.OK)
                 return true;
             else
-                Application.Exit();
+            {
+                tray_quit = true;
+                this.Close();
+            }
+
             return false;
         }
 
@@ -428,8 +436,30 @@ namespace ScreenDimmer
                         break;
                     }
                 }
+                // create new ScreenInfo object if this Screen object is not represented
                 if (!found)
-                    screen_list.Add(NewScreenInfo(scrn, screen_list.Count + 1));
+                {
+                    int new_index = 0;
+                    bool unavailable = true;
+
+                    while (unavailable)
+                    {
+                        unavailable = false;
+                        ++new_index;
+
+                        foreach (ScreenInfo scrn_info in screen_list)
+                        {
+                            if (new_index == scrn_info.ScreenIndex)
+                            {
+                                unavailable = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    screen_list.Add(NewScreenInfo(scrn, new_index));
+                    recreate_basic_screen = true;
+                }
 
                 // get largest screen size
                 if (basic_left > x)
@@ -452,7 +482,11 @@ namespace ScreenDimmer
             }
 
             // update screen count text
-            screen_count_label.Text = "Number of monitors detected: " + screen_list.Count;
+            // if NULL, then skip, as screen_count_label will be initialized soon
+            try
+            { screen_count_label.Text = "Number of monitors detected: " + screen_list.Count; }
+            catch (NullReferenceException) { }
+            
         }
 
         // clears screen_list, removed existing forms
@@ -559,7 +593,7 @@ namespace ScreenDimmer
             FlowLayoutPanel flp = new FlowLayoutPanel();
             flp.Dock = DockStyle.Fill;
             flp.FlowDirection = FlowDirection.LeftToRight;
-            flp.Padding = new Padding(12, 4, 4, 12);
+            flp.Padding = new Padding(10, 6, 6, 10);
             tbl.Controls.Add(flp, 0, 2);
 
             CheckBox cb = new CheckBox();

@@ -41,31 +41,56 @@ namespace ScreenDimmer
         public int OriginX
         {
             get { return form.Location.X; }
-            set { form.Location = new Point(value, form.Location.Y); }
+            set
+            {
+                if (value > MAX_ORIGINX || value < MIN_ORIGINX)
+                    throw new ArgumentOutOfRangeException();
+                form.Location = new Point(value, form.Location.Y);
+            }
         }
 
         public int OriginY
         {
             get { return form.Location.Y; }
-            set { form.Location = new Point(form.Location.X, value); }
+            set
+            {
+                if (value > MAX_ORIGINY || value < MIN_ORIGINY)
+                    throw new ArgumentOutOfRangeException();
+                form.Location = new Point(form.Location.X, value);
+            }
         }
 
         public int ResolutionX
         {
             get { return form.Width; }
-            set { form.Width = value; }
+            set
+            {
+                if (value > MAX_RES || value < MIN_RES)
+                    throw new ArgumentOutOfRangeException();
+                form.Width = value;
+            }
         }
 
         public int ResolutionY
         {
             get { return form.Height; }
-            set { form.Height = value; }
+            set
+            {
+                if (value > MAX_RES || value < MIN_RES)
+                    throw new ArgumentOutOfRangeException();
+                form.Height = value;
+            }
         }
 
         public double Opacity
         {
             get { return form.Opacity; }
-            set { form.Opacity = value; }
+            set
+            {
+                if (value < MIN_OPACITY || value > MAX_OPACITY)
+                    throw new ArgumentOutOfRangeException();
+                form.Opacity = value;
+            }
         }
         private bool show_form;
         public bool Show
