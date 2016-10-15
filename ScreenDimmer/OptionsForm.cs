@@ -66,7 +66,6 @@ namespace ScreenDimmer
         private Label screen_count_label;
 
         private NotifyIcon tray;
-        private bool tray_quit;
 
         private System.Timers.Timer save_timer;
         private bool save_timer_triggered;
@@ -217,8 +216,6 @@ namespace ScreenDimmer
             tray.BalloonTipText = TrayHelpText;
             tray.BalloonTipIcon = ToolTipIcon.Info;
             tray.MouseClick += TrayHelpBubble;
-
-            tray_quit = false;
 
             // system tray context menu setup
             tray.ContextMenu = new ContextMenu();
@@ -385,10 +382,7 @@ namespace ScreenDimmer
             if (res == DialogResult.OK)
                 return true;
             else
-            {
-                tray_quit = true;
                 this.Close();
-            }
 
             return false;
         }
@@ -721,11 +715,13 @@ namespace ScreenDimmer
 
         private void CloseForm(object sender, FormClosingEventArgs e)
         {
-            if (!tray_quit)
+            if (e.CloseReason == CloseReason.UserClosing)
             {
                 this.Hide();
                 e.Cancel = true;
             }
+            else
+                tray.Visible = false;
         }
 
         private void GitHubLinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -748,8 +744,7 @@ namespace ScreenDimmer
             if (save_timer_triggered)
                 SaveSettings();
 
-            tray_quit = true;
-            tray.Visible = false;
+            this.Hide();
             Application.Exit();
         }
 
