@@ -190,7 +190,7 @@ namespace ScreenDimmer
         //
 
         public void Destroy() { form.Close(); form = null; }
-
+        
         //
         //  </INTERFACE>
         //

@@ -66,6 +66,7 @@ namespace ScreenDimmer
         private Label screen_count_label;
 
         private NotifyIcon tray;
+        private System.Timers.Timer tray_click_timer;
 
         private System.Timers.Timer save_timer;
         private bool save_timer_triggered;
@@ -210,12 +211,16 @@ namespace ScreenDimmer
             tray.Text = "ScreenDimmer";
             tray.Icon = this.Icon;
             tray.Visible = true;
-            tray.MouseDoubleClick += TrayShowWindow;
 
             tray.BalloonTipTitle = "Help";
             tray.BalloonTipText = TrayHelpText;
             tray.BalloonTipIcon = ToolTipIcon.Info;
-            tray.MouseClick += TrayHelpBubble;
+            tray.MouseClick += TrayClicked;
+            tray.MouseDoubleClick += TrayDoubleClicked;
+
+            tray_click_timer = new System.Timers.Timer();
+            tray_click_timer.Interval = SystemInformation.DoubleClickTime;
+            tray_click_timer.Elapsed += TrayShowHelpBubble;
 
             // system tray context menu setup
             tray.ContextMenu = new ContextMenu();
@@ -816,8 +821,20 @@ namespace ScreenDimmer
         private void TrayShowWindow(object sender, EventArgs e)
         { this.Show(); }
 
-        private void TrayHelpBubble(object sender, MouseEventArgs e)
-        { tray.ShowBalloonTip(4000); }
+        private void TrayShowHelpBubble(object sender, EventArgs e)
+        {
+            tray_click_timer.Stop();
+            tray.ShowBalloonTip(4000);
+        }
+
+        private void TrayClicked(object sender, MouseEventArgs e)
+        { tray_click_timer.Start(); }
+
+        private void TrayDoubleClicked(object sender, MouseEventArgs e)
+        {
+            tray_click_timer.Stop();
+            this.Show();
+        }
 
         //
         //  </CALLBACKS>
